@@ -46,15 +46,8 @@ type CartItem struct {
 var store = make(map[uint64]map[uint64]*CartItem)
 
 func Add(userID, sku uint64, skuCount uint) {
-	if cartItems, ok := store[userID]; ok {
-		if cartItem, ok := cartItems[sku]; ok {
-			cartItem.QTY += skuCount
-		} else {
-			cartItem = &CartItem{
-				SKU: sku,
-				QTY: skuCount,
-			}
-		}
+	if cartItem, ok := store[userID][sku]; ok {
+		cartItem.QTY += skuCount
 	}
 	store[userID] = make(map[uint64]*CartItem)
 	store[userID][sku] = &CartItem{
