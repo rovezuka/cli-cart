@@ -2,14 +2,22 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/pflag"
 	"log"
 	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 const (
 	expectedFlagsCnt = 3
 )
+
+var rootCommand cobra.Command = cobra.Command{
+	Use:   "cli",
+	Short: "CLI tool for Cart",
+	Long:  "CLI tool for Cart",
+}
 
 func main() {
 
