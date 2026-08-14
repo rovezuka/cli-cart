@@ -1,7 +1,6 @@
 package main
 
 import (
-	"CliCart/internal/domain/cart"
 	"CliCart/internal/storage/map_store"
 	"bufio"
 	"errors"
@@ -24,8 +23,8 @@ var rootCommand cobra.Command = cobra.Command{
 }
 
 type Storage interface {
-	Read(userID cart.UserID) string
-	Add(userID cart.UserID, sku cart.SKU, skuCount uint)
+	Read(userID uint64) string
+	Add(userID, sku uint64, skuCount uint)
 }
 
 type StorageService struct {
@@ -45,7 +44,7 @@ func (s *StorageService) AddCommand(cmd *cobra.Command, args []string) error {
 		return multierr.Combine(err1, err2, err3)
 	}
 
-	s.store.Add(cart.UserID(uid), cart.SKU(sku), uint(sc))
+	s.store.Add(uint64(uid), uint64(sku), uint(sc))
 
 	return nil
 }
@@ -57,7 +56,7 @@ func (s *StorageService) ViewCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("cannot prase uid: %s %w", args[0], err1)
 	}
 
-	fmt.Println(s.store.Read(cart.UserID(uid)))
+	fmt.Println(s.store.Read(uint64(uid)))
 
 	return nil
 }

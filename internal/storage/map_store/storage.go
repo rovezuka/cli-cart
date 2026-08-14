@@ -16,7 +16,11 @@ func NewMapStorage() *Storage {
 	}
 }
 
-func (s *Storage) Read(userID cart.UserID) string {
+func (s *Storage) Read(userID uint64) string {
+	return s.read(cart.UserID(userID))
+}
+
+func (s *Storage) read(userID cart.UserID) string {
 	builder := strings.Builder{}
 	for _, ci := range s.store[userID] {
 		builder.Write([]byte(fmt.Sprintf("sku: %d - cnt: %d\n", ci.SKU, ci.QTY)))
@@ -24,7 +28,11 @@ func (s *Storage) Read(userID cart.UserID) string {
 	return builder.String()
 }
 
-func (s *Storage) Add(userID cart.UserID, sku cart.SKU, skuCount uint) {
+func (s *Storage) Add(userID, sku uint64, skuCount uint) {
+	s.add(cart.UserID(userID), cart.SKU(sku), skuCount)
+}
+
+func (s *Storage) add(userID cart.UserID, sku cart.SKU, skuCount uint) {
 
 	if cartItem, ok := s.store[userID][sku]; ok {
 		cartItem.QTY += skuCount
