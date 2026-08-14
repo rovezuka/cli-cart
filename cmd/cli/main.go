@@ -1,6 +1,8 @@
 package main
 
 import (
+	"CliCart/internal/domain/cart"
+	"CliCart/internal/storage/map_store"
 	"bufio"
 	"errors"
 	"fmt"
@@ -21,49 +23,43 @@ var rootCommand cobra.Command = cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {},
 }
 
-func init() {
-	rootCommand.AddCommand(
-		&cobra.Command{
-			Use:     "add",
-			Short:   "a",
-			Example: "",
-			Args:    cobra.ExactArgs(expectedFlagsCnt),
-			RunE: func(cmd *cobra.Command, args []string) error {
-				if len(args) != expectedFlagsCnt {
-					return errors.New("wrong number of arguments")
-				}
+type Storage interface {
+	Read(userID cart.UserID) string
+	Add(userID cart.UserID, sku cart.SKU, skuCount uint)
+}
 
-				uid, err1 := strconv.Atoi(args[0])
-				sku, err2 := strconv.Atoi(args[1])
-				sc, err3 := strconv.Atoi(args[2])
+type StorageService struct {
+	store Storage
+}
 
-				if err1 != nil || err2 != nil || err3 != nil {
-					return multierr.Combine(err1, err2, err3)
-				}
+func (s *StorageService) AddCommand(cmd *cobra.Command, args []string) error {
+	if len(args) != expectedFlagsCnt {
+		return errors.New("wrong number of arguments")
+	}
 
-				Add(uint64(uid), uint64(sku), uint(sc))
+	uid, err1 := strconv.Atoi(args[0])
+	sku, err2 := strconv.Atoi(args[1])
+	sc, err3 := strconv.Atoi(args[2])
 
-				return nil
-			},
-		},
-		&cobra.Command{
-			Use:     "view",
-			Short:   "v",
-			Example: "",
-			Args:    cobra.ExactArgs(1),
-			RunE: func(cmd *cobra.Command, args []string) error {
-				uid, err1 := strconv.Atoi(args[0])
+	if err1 != nil || err2 != nil || err3 != nil {
+		return multierr.Combine(err1, err2, err3)
+	}
 
-				if err1 != nil {
-					return fmt.Errorf("cannot prase uid: %s %w", args[0], err1)
-				}
+	s.store.Add(cart.UserID(uid), cart.SKU(sku), uint(sc))
 
-				fmt.Println(Read(uint64(uid)))
+	return nil
+}
 
-				return nil
-			},
-		},
-	)
+func (s *StorageService) ViewCommand(cmd *cobra.Command, args []string) error {
+	uid, err1 := strconv.Atoi(args[0])
+
+	if err1 != nil {
+		return fmt.Errorf("cannot prase uid: %s %w", args[0], err1)
+	}
+
+	fmt.Println(s.store.Read(cart.UserID(uid)))
+
+	return nil
 }
 
 func main() {
@@ -81,6 +77,27 @@ func main() {
 	//Add(*userID, *skuID, *skuCount)
 	//
 	//fmt.Println(Read(*userID))
+
+	st := StorageService{
+		store: map_store.NewMapStorage(),
+	}
+
+	rootCommand.AddCommand(
+		&cobra.Command{
+			Use:     "add",
+			Short:   "a",
+			Example: "",
+			Args:    cobra.ExactArgs(expectedFlagsCnt),
+			RunE:    st.AddCommand,
+		},
+		&cobra.Command{
+			Use:     "view",
+			Short:   "v",
+			Example: "",
+			Args:    cobra.ExactArgs(1),
+			RunE:    st.ViewCommand,
+		},
+	)
 
 	fmt.Println("Welcome")
 	scanner := bufio.NewScanner(os.Stdin)
@@ -107,33 +124,4 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Error: %s", err)
 	}
-}
-
-func Read(userID uint64) string {
-	builder := strings.Builder{}
-	for _, ci := range store[userID] {
-		builder.Write([]byte(fmt.Sprintf("sku: %d - cnt: %d\n", ci.SKU, ci.QTY)))
-	}
-	return builder.String()
-}
-
-type CartItem struct {
-	SKU uint64
-	QTY uint
-}
-
-//type CartItem map[uint64]uint
-
-var store = make(map[uint64]map[uint64]*CartItem)
-
-func Add(userID, sku uint64, skuCount uint) {
-	if cartItem, ok := store[userID][sku]; ok {
-		cartItem.QTY += skuCount
-	}
-	store[userID] = make(map[uint64]*CartItem)
-	store[userID][sku] = &CartItem{
-		SKU: sku,
-		QTY: skuCount,
-	}
-	//fmt.Printf("user: %d, sku: %d, sku_cnt: %d\n", userID, skuID, skuCount)
 }
