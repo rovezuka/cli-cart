@@ -105,7 +105,7 @@ func main() {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Fatalf("Error: %w", err)
+		log.Fatalf("Error: %s", err)
 	}
 }
 
