@@ -2,8 +2,14 @@ package map_store
 
 import (
 	"CliCart/internal/domain/cart"
+	"errors"
 	"fmt"
 	"strings"
+)
+
+var (
+	ErrHasNoCart       = errors.New("has no cart")
+	ErrInvalidSKUCount = errors.New("invalid sku count")
 )
 
 type Storage struct {
@@ -16,23 +22,31 @@ func NewMapStorage() *Storage {
 	}
 }
 
-func (s *Storage) Read(userID uint64) string {
+func (s *Storage) Read(userID uint64) (string, error) {
 	return s.read(cart.UserID(userID))
 }
 
-func (s *Storage) read(userID cart.UserID) string {
+func (s *Storage) read(userID cart.UserID) (string, error) {
 	builder := strings.Builder{}
+	if _, ok := s.store[userID]; !ok {
+		return "", fmt.Errorf("user %d: %w", userID, ErrHasNoCart)
+	}
+
 	for _, ci := range s.store[userID] {
 		builder.Write([]byte(fmt.Sprintf("sku: %d - cnt: %d\n", ci.SKU, ci.QTY)))
 	}
-	return builder.String()
+	return builder.String(), nil
 }
 
-func (s *Storage) Add(userID, sku uint64, skuCount uint) {
-	s.add(cart.UserID(userID), cart.SKU(sku), skuCount)
+func (s *Storage) Add(userID, sku uint64, skuCount uint) error {
+	return s.add(cart.UserID(userID), cart.SKU(sku), skuCount)
 }
 
-func (s *Storage) add(userID cart.UserID, sku cart.SKU, skuCount uint) {
+func (s *Storage) add(userID cart.UserID, sku cart.SKU, skuCount uint) error {
+
+	if skuCount < 1 {
+		return ErrInvalidSKUCount
+	}
 
 	if cartItem, ok := s.store[userID][sku]; ok {
 		cartItem.QTY += skuCount
@@ -42,5 +56,5 @@ func (s *Storage) add(userID cart.UserID, sku cart.SKU, skuCount uint) {
 		SKU: sku,
 		QTY: skuCount,
 	}
-	//fmt.Printf("user: %d, sku: %d, sku_cnt: %d\n", userID, skuID, skuCount)
+	return nil
 }

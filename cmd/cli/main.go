@@ -23,8 +23,8 @@ var rootCommand cobra.Command = cobra.Command{
 }
 
 type Storage interface {
-	Read(userID uint64) string
-	Add(userID, sku uint64, skuCount uint)
+	Read(userID uint64) (string, error)
+	Add(userID, sku uint64, skuCount uint) error
 }
 
 type StorageService struct {
@@ -44,7 +44,10 @@ func (s *StorageService) AddCommand(cmd *cobra.Command, args []string) error {
 		return multierr.Combine(err1, err2, err3)
 	}
 
-	s.store.Add(uint64(uid), uint64(sku), uint(sc))
+	err := s.store.Add(uint64(uid), uint64(sku), uint(sc))
+	if err != nil {
+		return fmt.Errorf("Cannot add item: %d in user %d cart %w", sku, uid, err)
+	}
 
 	return nil
 }
@@ -53,10 +56,14 @@ func (s *StorageService) ViewCommand(cmd *cobra.Command, args []string) error {
 	uid, err1 := strconv.Atoi(args[0])
 
 	if err1 != nil {
-		return fmt.Errorf("cannot prase uid: %s %w", args[0], err1)
+		return fmt.Errorf("cannot parse uid: %s %w", args[0], err1)
 	}
 
-	fmt.Println(s.store.Read(uint64(uid)))
+	cart, err := s.store.Read(uint64(uid))
+	if err != nil {
+		return fmt.Errorf("cannot read user %s cart: %w", args[0], err)
+	}
+	fmt.Println(cart)
 
 	return nil
 }
@@ -117,7 +124,7 @@ func main() {
 		rootCommand.SetArgs(parts)
 
 		if err := rootCommand.Execute(); err != nil {
-			fmt.Fprintln(os.Stderr, "Command failed, Input Error: %w", err)
+			fmt.Fprintf(os.Stderr, "Command failed, Input Error: %s", err)
 		}
 	}
 	if err := scanner.Err(); err != nil {
