@@ -1,7 +1,7 @@
 package main
 
 import (
-	"CliCart/internal/storage/map_store"
+	"CliCart/internal/storage/json_store"
 	"bufio"
 	"errors"
 	"fmt"
@@ -84,8 +84,13 @@ func main() {
 	//
 	//fmt.Println(Read(*userID))
 
+	js, err := json_store.NewStorage("db.json")
+	if err != nil {
+		log.Fatalf("Cannot create json store: %s", err)
+	}
+
 	st := StorageService{
-		store: map_store.NewMapStorage(),
+		store: js,
 	}
 
 	rootCommand.AddCommand(

@@ -1,8 +1,8 @@
 package cart
 
 type CartItem struct {
-	SKU SKU
-	QTY uint
+	SKU SKU  `json:"sku"`
+	QTY uint `json:"quantity,omitempty"`
 }
 
 type (

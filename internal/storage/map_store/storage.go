@@ -2,14 +2,9 @@ package map_store
 
 import (
 	"CliCart/internal/domain/cart"
-	"errors"
+	storage_errors "CliCart/internal/storage/errors"
 	"fmt"
 	"strings"
-)
-
-var (
-	ErrHasNoCart       = errors.New("has no cart")
-	ErrInvalidSKUCount = errors.New("invalid sku count")
 )
 
 type Storage struct {
@@ -29,7 +24,7 @@ func (s *Storage) Read(userID uint64) (string, error) {
 func (s *Storage) read(userID cart.UserID) (string, error) {
 	builder := strings.Builder{}
 	if _, ok := s.store[userID]; !ok {
-		return "", fmt.Errorf("user %d: %w", userID, ErrHasNoCart)
+		return "", fmt.Errorf("user %d: %w", userID, storage_errors.ErrHasNoCart)
 	}
 
 	for _, ci := range s.store[userID] {
@@ -45,7 +40,7 @@ func (s *Storage) Add(userID, sku uint64, skuCount uint) error {
 func (s *Storage) add(userID cart.UserID, sku cart.SKU, skuCount uint) error {
 
 	if skuCount < 1 {
-		return ErrInvalidSKUCount
+		return storage_errors.ErrInvalidSKUCount
 	}
 
 	if cartItem, ok := s.store[userID][sku]; ok {
